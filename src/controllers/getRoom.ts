@@ -14,7 +14,7 @@ export async function getRoom(req: Request, res: Response) {
 
   const resultsObject = {
     room: results[0].rooms,
-    users: [] as { id: string; userName: string }[],
+    users: [] as { id: string; userName: string; isRoomCreator: boolean }[],
   };
 
   results.forEach((result) => {
@@ -22,6 +22,7 @@ export async function getRoom(req: Request, res: Response) {
       resultsObject.users.push({
         id: result.users.id,
         userName: result.users.userName,
+        isRoomCreator: result.users.isRoomCreator,
       });
     }
   });

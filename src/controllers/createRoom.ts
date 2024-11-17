@@ -15,7 +15,7 @@ export async function createRoom(req: Request, res: Response) {
 
   const user = await db
     .insert(usersTable)
-    .values({ userName: userName, roomId: roomId })
+    .values({ userName: userName, roomId: roomId, isRoomCreator: true })
     .returning();
 
   res.status(200).json({ userId: user[0].id, roomId: roomId });
