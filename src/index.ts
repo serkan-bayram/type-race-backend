@@ -2,10 +2,16 @@ import dotenv from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import roomRoutes from "./routes/room.js";
+import { Server } from "socket.io";
+import { createServer } from "http";
 
 dotenv.config({ path: process.cwd() + "/.env.local" });
 
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: { origin: "http://localhost:5173" },
+});
 
 // Middleware
 const corsOptions = {
@@ -20,7 +26,108 @@ app.use(express.json());
 // Routes
 app.use("/api/room", roomRoutes);
 
-app.listen(4001, () => {
+type GameStatus = "started" | "finished";
+
+let rooms: {
+  roomId: string;
+  // Undefined means game is not started
+  status?: GameStatus;
+  users: { isCreator: boolean; id: string }[];
+}[] = [];
+
+// Socket
+io.on("connection", (socket) => {
+  console.log(`${socket.id} is connected`);
+
+  socket.on("createRoom", ({ userName }) => {
+    const room = {
+      roomId: crypto.randomUUID(),
+      users: [
+        {
+          isCreator: true,
+          id: socket.id,
+          userName: userName,
+        },
+      ],
+    };
+
+    rooms.push(room);
+
+    console.log("Room is created:", room);
+
+    socket.join(room.roomId);
+    io.to(socket.id).emit("createRoom", room.roomId);
+    io.to(room.roomId).emit("roomInfo", room);
+  });
+
+  socket.on("joinRoom", ({ userName, roomId }) => {
+    const room = rooms.find((room) => room.roomId === roomId);
+
+    if (!room) {
+      io.to(socket.id).emit("joinRoom", "Room does not exists");
+      return;
+    }
+
+    const user = { userName: userName, id: socket.id, isCreator: false };
+
+    room.users.push(user);
+
+    console.log(`${socket.id} joined a room: `, rooms);
+
+    socket.join(roomId);
+    io.to(socket.id).emit("joinRoom", "Success");
+    io.to(room.roomId).emit("roomInfo", room);
+  });
+
+  socket.on("startGame", ({ roomId }) => {
+    const room = rooms.find((room) => room.roomId === roomId);
+
+    if (!room) {
+      io.to(socket.id).emit("startGame", "Room does not exists");
+      return;
+    }
+
+    const isCreator = room.users.some(
+      (user) => socket.id === user.id && user.isCreator
+    );
+
+    if (!isCreator) {
+      io.to(socket.id).emit("startGame", "Only the creator can start game");
+      return;
+    }
+
+    room.status = "started";
+    io.to(socket.id).emit("startGame", "Success");
+    io.to(room.roomId).emit("roomInfo", room);
+  });
+
+  socket.on("disconnect", () => {
+    const socketId = socket.id;
+
+    for (let index = 0; index < rooms.length; index++) {
+      const userIndex = rooms[index].users.findIndex(
+        (user) => user.id === socketId
+      );
+
+      // User is not in this room
+      if (userIndex === -1) continue;
+
+      rooms[index].users.splice(userIndex, 1);
+
+      // If everyone left
+      if (rooms[index].users.length === 0) {
+        rooms.splice(index, 1);
+      } else {
+        // Notify the users
+        io.to(rooms[index].roomId).emit("roomInfo", rooms[index]);
+      }
+    }
+
+    console.log(`${socket.id} is disconnected`);
+  });
+});
+
+server.listen(4001, () => {
   console.log(`Example app listening on port ${4001}`);
 });
 

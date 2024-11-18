@@ -29,7 +29,7 @@ export async function joinRoom(
       .select()
       .from(roomsTable)
       .where(eq(roomsTable.id, roomId))
-      .limit(0);
+      .limit(1);
 
     if (room.length === 0) {
       res.status(404).json({ message: "This room does not exists" });
