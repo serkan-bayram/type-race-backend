@@ -24,8 +24,7 @@ app.listen(4001, () => {
   console.log(`Example app listening on port ${4001}`);
 });
 
-// This does not work I think
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
-  res.status(500).send("Something broke!");
+  res.status(500).json({ message: "Something went wrong" });
 });
