@@ -32,6 +32,7 @@ let rooms: {
   roomId: string;
   // Undefined means game is not started
   status?: GameStatus;
+  secondsLeft: number;
   users: { isCreator: boolean; id: string }[];
 }[] = [];
 
@@ -42,6 +43,7 @@ io.on("connection", (socket) => {
   socket.on("createRoom", ({ userName }) => {
     const room = {
       roomId: crypto.randomUUID(),
+      secondsLeft: 60,
       users: [
         {
           isCreator: true,
@@ -98,7 +100,17 @@ io.on("connection", (socket) => {
 
     room.status = "started";
     io.to(socket.id).emit("startGame", "Success");
-    io.to(room.roomId).emit("roomInfo", room);
+
+    const interval = setInterval(() => {
+      if (room.secondsLeft > 0) {
+        room.secondsLeft -= 1;
+        io.to(room.roomId).emit("roomInfo", room);
+      } else {
+        room.status = "finished";
+        io.to(room.roomId).emit("roomInfo", room);
+        clearInterval(interval);
+      }
+    }, 1000);
   });
 
   socket.on("disconnect", () => {
