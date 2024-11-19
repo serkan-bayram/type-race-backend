@@ -33,12 +33,26 @@ let rooms: {
   // Undefined means game is not started
   status?: GameStatus;
   secondsLeft: number;
-  users: { isCreator: boolean; id: string }[];
+  users: { isCreator: boolean; id: string; WPM: number }[];
 }[] = [];
 
 // Socket
 io.on("connection", (socket) => {
   console.log(`${socket.id} is connected`);
+
+  socket.on("type", ({ WPM, roomId }) => {
+    const room = rooms.find((room) => room.roomId === roomId);
+
+    if (!room) return;
+
+    const user = room.users.find((user) => user.id === socket.id);
+
+    if (!user) return;
+
+    user.WPM = WPM;
+
+    io.to(room.roomId).emit("roomInfo", room);
+  });
 
   socket.on("createRoom", ({ userName }) => {
     const room = {
@@ -49,6 +63,7 @@ io.on("connection", (socket) => {
           isCreator: true,
           id: socket.id,
           userName: userName,
+          WPM: 0,
         },
       ],
     };
@@ -70,7 +85,12 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const user = { userName: userName, id: socket.id, isCreator: false };
+    const user = {
+      userName: userName,
+      id: socket.id,
+      isCreator: false,
+      WPM: 0,
+    };
 
     room.users.push(user);
 
