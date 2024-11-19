@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
-import roomRoutes from "./routes/room.js";
+import wordRoutes from "./routes/word.js";
 import { Server } from "socket.io";
 import { createServer } from "http";
 
@@ -24,14 +24,12 @@ app.use("/public", express.static("public"));
 app.use(express.json());
 
 // Routes
-app.use("/api/room", roomRoutes);
-
-type GameStatus = "started" | "finished";
+app.use("/api/words", wordRoutes);
 
 let rooms: {
   roomId: string;
   // Undefined means game is not started
-  status?: GameStatus;
+  status?: "started" | "finished";
   secondsLeft: number;
   users: { isCreator: boolean; id: string; WPM: number }[];
 }[] = [];
