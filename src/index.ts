@@ -83,6 +83,11 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (room.status === "started") {
+      io.to(socket.id).emit("joinRoom", "This game is already started");
+      return;
+    }
+
     const user = {
       userName: userName,
       id: socket.id,
