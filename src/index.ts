@@ -4,6 +4,7 @@ import cors from "cors";
 import wordRoutes from "./routes/word.js";
 import { Server } from "socket.io";
 import { createServer } from "http";
+import { setTimeout } from "node:timers/promises";
 
 dotenv.config({ path: process.cwd() + "/.env.local" });
 
@@ -79,12 +80,18 @@ io.on("connection", (socket) => {
     const room = rooms.find((room) => room.roomId === roomId);
 
     if (!room) {
-      io.to(socket.id).emit("joinRoom", "Room does not exists");
+      io.to(socket.id).emit("joinRoom", {
+        ok: false,
+        data: "Room does not exist",
+      });
       return;
     }
 
     if (room.status === "started") {
-      io.to(socket.id).emit("joinRoom", "This game is already started");
+      io.to(socket.id).emit("joinRoom", {
+        ok: false,
+        data: "This game is already started",
+      });
       return;
     }
 
@@ -100,15 +107,15 @@ io.on("connection", (socket) => {
     console.log(`${socket.id} joined a room: `, rooms);
 
     socket.join(roomId);
-    io.to(socket.id).emit("joinRoom", "Success");
+    io.to(socket.id).emit("joinRoom", { ok: true, data: room.roomId });
     io.to(room.roomId).emit("roomInfo", room);
   });
 
-  socket.on("startGame", ({ roomId }) => {
+  socket.on("startGame", async ({ roomId }) => {
     const room = rooms.find((room) => room.roomId === roomId);
 
     if (!room) {
-      io.to(socket.id).emit("startGame", "Room does not exists");
+      io.to(socket.id).emit("startGame", "Room does not exist");
       return;
     }
 
@@ -121,18 +128,21 @@ io.on("connection", (socket) => {
       return;
     }
 
+    io.to(room.roomId).emit("startGame", "Success");
+
+    await setTimeout(3000);
+
     room.status = "started";
-    io.to(socket.id).emit("startGame", "Success");
+    io.to(room.roomId).emit("roomInfo", room);
 
     const interval = setInterval(() => {
       if (room.secondsLeft > 0) {
         room.secondsLeft -= 1;
-        io.to(room.roomId).emit("roomInfo", room);
       } else {
         room.status = "finished";
-        io.to(room.roomId).emit("roomInfo", room);
         clearInterval(interval);
       }
+      io.to(room.roomId).emit("roomInfo", room);
     }, 1000);
   });
 
