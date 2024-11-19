@@ -10,15 +10,23 @@ dotenv.config({ path: process.cwd() + "/.env.local" });
 
 const app = express();
 const server = createServer(app);
+
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173" },
+  cors: {
+    origin: "https://typerace.serkanbayram.dev", // Websitenizin adresi
+  },
 });
+
+io.on("connect_error", (err) => {
+  console.error("Socket.IO bağlantı hatası:", err.message);
+});
+
 
 // Middleware
 const corsOptions = {
   credentials: true,
   // TODO: Change this on production
-  origin: "http://localhost:5173",
+  origin: "https://typerace.serkanbayram.dev",
 };
 app.use(cors(corsOptions));
 app.use("/public", express.static("public"));
