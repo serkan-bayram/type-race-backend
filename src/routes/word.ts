@@ -1,8 +1,9 @@
 import express from "express";
-import { getTurkishWords } from "../controllers/getTurkishWords.js";
+import { getEnglish, getTurkish } from "../controllers/word.js";
 
 const router = express.Router();
 
-router.get("/turkish", getTurkishWords);
+router.get("/turkish", getTurkish);
+router.get("/english", getEnglish);
 
 export default router;

@@ -2,9 +2,12 @@ import dotenv from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import wordRoutes from "./routes/word.js";
+import scoreRoutes from "./routes/score.js";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import { setTimeout } from "node:timers/promises";
+import { db } from "./config/db.js";
+import { usersTable } from "./schemas/schema.js";
 
 dotenv.config({ path: process.cwd() + "/.env.local" });
 
@@ -13,7 +16,7 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://typerace.serkanbayram.dev", // Websitenizin adresi
+    origin: ["https://typerace.serkanbayram.dev", "http://localhost:5173"], // Websitenizin adresi
   },
 });
 
@@ -21,12 +24,10 @@ io.on("connect_error", (err) => {
   console.error("Socket.IO bağlantı hatası:", err.message);
 });
 
-
 // Middleware
 const corsOptions = {
   credentials: true,
-  // TODO: Change this on production
-  origin: "https://typerace.serkanbayram.dev",
+  origin: ["https://typerace.serkanbayram.dev", "http://localhost:5173"],
 };
 app.use(cors(corsOptions));
 app.use("/public", express.static("public"));
@@ -34,13 +35,15 @@ app.use(express.json());
 
 // Routes
 app.use("/api/words", wordRoutes);
+app.use("/api/score", scoreRoutes);
 
 let rooms: {
   roomId: string;
+  language: string;
   // Undefined means game is not started
   status?: "started" | "finished";
   secondsLeft: number;
-  users: { isCreator: boolean; id: string; WPM: number }[];
+  users: { isCreator: boolean; id: string; WPM: number; userName: string }[];
 }[] = [];
 
 // Socket
@@ -61,9 +64,10 @@ io.on("connection", (socket) => {
     io.to(room.roomId).emit("roomInfo", room);
   });
 
-  socket.on("createRoom", ({ userName }) => {
+  socket.on("createRoom", ({ userName, language }) => {
     const room = {
       roomId: crypto.randomUUID(),
+      language: language,
       secondsLeft: 60,
       users: [
         {
@@ -143,11 +147,25 @@ io.on("connection", (socket) => {
     room.status = "started";
     io.to(room.roomId).emit("roomInfo", room);
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (room.secondsLeft > 0) {
         room.secondsLeft -= 1;
       } else {
         room.status = "finished";
+
+        const insertObject = room.users.map((user) => ({
+          userName: user.userName,
+          score: user.WPM,
+        }));
+
+        io.to(room.roomId).emit("roomInfo", room);
+
+        try {
+          await db.insert(usersTable).values(insertObject);
+        } catch (error) {
+          console.log("Unable to save scores: ", error);
+        }
+
         clearInterval(interval);
       }
       io.to(room.roomId).emit("roomInfo", room);
