@@ -9,5 +9,7 @@ export async function getScores(req: Request, res: Response) {
     .from(usersTable)
     .orderBy(desc(usersTable.score));
 
+  console.log(scores);
+
   res.status(200).json({ scores: scores });
 }
