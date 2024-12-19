@@ -8,6 +8,7 @@ import { createServer } from "http";
 import { setTimeout } from "node:timers/promises";
 import { db } from "./config/db.js";
 import { usersTable } from "./schemas/schema.js";
+import * as crypto from "crypto";
 
 dotenv.config({ path: process.cwd() + "/.env.local" });
 
@@ -65,8 +66,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("createRoom", ({ userName, language }) => {
+    const id = crypto.randomBytes(3).toString("hex");
+
     const room = {
-      roomId: crypto.randomUUID(),
+      roomId: id,
       language: language,
       secondsLeft: 60,
       users: [
