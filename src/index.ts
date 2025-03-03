@@ -6,7 +6,7 @@ import scoreRoutes from "./routes/score.js";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import { setTimeout } from "node:timers/promises";
-import { db } from "./config/db.js";
+// import { db } from "./config/db.js";
 import { usersTable } from "./schemas/schema.js";
 import * as crypto from "crypto";
 
@@ -163,11 +163,11 @@ io.on("connection", (socket) => {
 
         io.to(room.roomId).emit("roomInfo", room);
 
-        try {
-          await db.insert(usersTable).values(insertObject);
-        } catch (error) {
-          console.log("Unable to save scores: ", error);
-        }
+        // try {
+        //   await db.insert(usersTable).values(insertObject);
+        // } catch (error) {
+        //   console.log("Unable to save scores: ", error);
+        // }
 
         clearInterval(interval);
       }
