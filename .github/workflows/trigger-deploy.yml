@@ -1,0 +1,25 @@
+name: 🚀 Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: home_server
+
+    steps:
+      - name: 🔐 SSH ile bağlanıp deploy.sh'yi çalıştır
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p ${{ secrets.PORT }} -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
+          REPO_NAME="${{ github.repository }}" 
+          REPO_NAME=${REPO_NAME#*/}  
+
+          ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} \
+          "bash /home/${{ secrets.USERNAME }}/deploy.sh git@github.com:${{ github.REPOSITORY }}.git /home/${{ secrets.USERNAME }}/${{ REPO_NAME }} main"
