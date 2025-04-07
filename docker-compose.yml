@@ -4,6 +4,6 @@ services:
     image: type-race-backend-image
     container_name: type-race-backend-container
     ports:
-      - "3001:8080"
+      - "3001:4001"
     restart: always
 
