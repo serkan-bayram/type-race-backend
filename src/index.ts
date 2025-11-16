@@ -199,8 +199,8 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log(`App listening on port ${3000}`);
+server.listen(process.env.PORT, () => {
+  console.log(`App listening on port ${process.env.PORT}`);
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
