@@ -6,8 +6,6 @@ import scoreRoutes from "./routes/score.js";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import { setTimeout } from "node:timers/promises";
-// import { db } from "./config/db.js";
-import { usersTable } from "./schemas/schema.js";
 import * as crypto from "crypto";
 
 dotenv.config({ path: process.cwd() + "/.env.local" });
@@ -201,8 +199,8 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(4001, () => {
-  console.log(`Example app listening on port ${4001}`);
+server.listen(3000, () => {
+  console.log(`App listening on port ${3000}`);
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
